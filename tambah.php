@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Isi semua data dengan benar. Harga harus positif dan stok tidak boleh negatif.';
     } else {
 
+        // Memeriksa apakah kategori tersedia
         $cek = mysqli_prepare(
             $koneksi,
             'SELECT COUNT(*) FROM kategori WHERE id_kategori = ?'
@@ -41,29 +42,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($cek);
 
         if ((int) $jumlahKategori === 0) {
+
             $error = 'Kategori tidak ditemukan.';
+
         } else {
 
+            // Menyimpan data produk
             $sql = 'INSERT INTO produk
                     (id_kategori, nama_produk, harga, stok)
                     VALUES (?, ?, ?, ?)';
 
             $stmt = mysqli_prepare($koneksi, $sql);
 
-            mysqli_stmt_bind_param(
-                $stmt,
-                'isdi',
-                $idKategori,
-                $nama,
-                $harga,
-                $stok
-            );
+            if ($stmt) {
 
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
+                mysqli_stmt_bind_param(
+                    $stmt,
+                    'isdi',
+                    $idKategori,
+                    $nama,
+                    $harga,
+                    $stok
+                );
 
-            header('Location: index.php');
-            exit;
+                if (mysqli_stmt_execute($stmt)) {
+
+                    mysqli_stmt_close($stmt);
+
+                    header('Location: index.php');
+                    exit;
+
+                } else {
+
+                    $error = 'Gagal menyimpan produk: ' . mysqli_stmt_error($stmt);
+                    mysqli_stmt_close($stmt);
+
+                }
+
+            } else {
+
+                $error = 'Gagal menyiapkan query: ' . mysqli_error($koneksi);
+
+            }
         }
     }
 }
@@ -71,9 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Tambah Produk</title>
 
     <style>
@@ -186,7 +208,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="container">
 
     <h1>Tambah Produk</h1>
-    <p class="deskripsi">Silakan isi formulir untuk menambahkan produk baru.</p>
+
+    <p class="deskripsi">
+        Silakan isi formulir untuk menambahkan produk baru.
+    </p>
 
     <?php if ($error !== ''): ?>
         <div class="error">
@@ -198,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="form-group">
             <label>Nama Produk</label>
+
             <input
                 type="text"
                 name="nama_produk"
@@ -209,6 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="form-group">
             <label>Harga Produk (Rp)</label>
+
             <input
                 type="number"
                 name="harga"
@@ -222,6 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="form-group">
             <label>Stok Produk</label>
+
             <input
                 type="number"
                 name="stok"
@@ -237,6 +265,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>Kategori Produk</label>
 
             <select name="id_kategori" required>
+
                 <option value="">Pilih kategori</option>
 
                 <?php while ($item = mysqli_fetch_assoc($kategori)): ?>
@@ -254,10 +283,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </option>
 
                 <?php endwhile; ?>
+
             </select>
         </div>
 
         <div class="tombol">
+
             <button type="submit" class="btn-simpan">
                 Simpan Produk
             </button>
@@ -265,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="index.php" class="btn-kembali">
                 Kembali
             </a>
+
         </div>
 
     </form>
